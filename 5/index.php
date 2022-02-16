@@ -1,79 +1,113 @@
 <?php
-use Decorator\ {
-    ComponentDecorator,
-    Dessert,
-    IceCream,
-    MilkShake,
-    Pie,
-    Nuts,
-    Chocolate,
-    Cinnamon
-};
-require_once "Dessert.php";
-require_once "ComponentDecorator.php";
-require_once "IceCream.php";
-require_once "MilkShake.php";
-require_once "Pie.php";
-require_once "Nuts.php";
-require_once "Chocolate.php";
-require_once "Cinnamon.php";
 
-// Обычный молочный коктейль
-$dessert = new MilkShake();
-echo 'Десерт: ' . $dessert->getDescription();
-echo '<br>';
-echo 'Цена: ' . $dessert->cost() . ' USD';
-echo '<br>';
-/*
-Вывод:
-Десерт: Молочный коктейль
-Цена: 3 USD
-*/
+namespace RefactoringGuru\Decorator\Conceptual;
 
-// Молочный коктейль с корицей
-$dessert = new Cinnamon(new MilkShake());
-echo 'Десерт: ' . $dessert->getDescription();
-echo '<br>';
-echo 'Цена: ' . $dessert->cost() . ' USD';
-echo '<br>';
-/*
-Вывод:
-Десерт: Молочный коктейль, Коррица
-Цена: 3.1 USD
-*/
+/**
+ * Базовый интерфейс Компонента определяет поведение, которое изменяется
+ * декораторами.
+ */
+interface Component
+{
+    public function operation(): string;
+}
 
-// Вкусный пирог с орешками, шоколадом и корицей
-$dessert = new Cinnamon(new Chocolate(new Nuts(new Pie())));
-echo 'Десерт: ' . $dessert->getDescription();
-echo '<br>';
-echo 'Цена: ' . $dessert->cost() . ' USD';
-echo '<br>';
-/*
-Вывод:
-Десерт: Пирог, Орешки, Шоколад, Коррица
-Цена: 9.4 USD
-*/
+/**
+ * Конкретные Компоненты предоставляют реализации поведения по умолчанию. Может
+ * быть несколько вариаций этих классов.
+ */
+class ConcreteComponent implements Component
+{
+    public function operation(): string
+    {
+        return "ConcreteComponent";
+    }
+}
 
-// Вкусный пирог с двойным шоколадом
-$dessert = new Chocolate(new Chocolate(new Pie()));
-echo 'Десерт: ' . $dessert->getDescription();
-echo '<br>';
-echo 'Цена: ' . $dessert->cost() . ' USD';
-echo '<br>';
-/*
-Вывод:
-Десерт: Пирог, Шоколад, Шоколад
-Цена: 9.6 USD
-*/
+/**
+ * Базовый класс Декоратора следует тому же интерфейсу, что и другие компоненты.
+ * Основная цель этого класса - определить интерфейс обёртки для всех конкретных
+ * декораторов. Реализация кода обёртки по умолчанию может включать в себя поле
+ * для хранения завёрнутого компонента и средства его инициализации.
+ */
+class Decorator implements Component
+{
+    /**
+     * @var Component
+     */
+    protected $component;
 
-// Мороженное с тройными орешками и двойным шоколадом
-$dessert = new Nuts(new Nuts(new Nuts(new Chocolate(new Chocolate(new IceCream())))));
-echo 'Десерт: ' . $dessert->getDescription();
-echo '<br>';
-echo 'Цена: ' . $dessert->cost() . ' USD';
-echo '<br>';
-/*
-Вывод:
-Десерт: Мороженное, Шоколад, Шоколад, Орешки, Орешки, Орешки
-Цена: 10.6 USD
-*/
+    public function __construct(Component $component)
+    {
+        $this->component = $component;
+    }
+
+    /**
+     * Декоратор делегирует всю работу обёрнутому компоненту.
+     */
+    public function operation(): string
+    {
+        return $this->component->operation();
+    }
+}
+
+/**
+ * Конкретные Декораторы вызывают обёрнутый объект и изменяют его результат
+ * некоторым образом.
+ */
+class ConcreteDecoratorA extends Decorator
+{
+    /**
+     * Декораторы могут вызывать родительскую реализацию операции, вместо того,
+     * чтобы вызвать обёрнутый объект напрямую. Такой подход упрощает расширение
+     * классов декораторов.
+     */
+    public function operation(): string
+    {
+        return "ConcreteDecoratorA(" . parent::operation() . ")";
+    }
+}
+
+/**
+ * Декораторы могут выполнять своё поведение до или после вызова обёрнутого
+ * объекта.
+ */
+class ConcreteDecoratorB extends Decorator
+{
+    public function operation(): string
+    {
+        return "ConcreteDecoratorB(" . parent::operation() . ")";
+    }
+}
+
+/**
+ * Клиентский код работает со всеми объектами, используя интерфейс Компонента.
+ * Таким образом, он остаётся независимым от конкретных классов компонентов, с
+ * которыми работает.
+ */
+function clientCode(Component $component)
+{
+    // ...
+
+    echo "RESULT: " . $component->operation();
+
+    // ...
+}
+
+/**
+ * Таким образом, клиентский код может поддерживать как простые компоненты...
+ */
+$simple = new ConcreteComponent();
+echo "Client: I've got a simple component:\n";
+clientCode($simple);
+echo "\n\n";
+
+/**
+ * ...так и декорированные.
+ *
+ * Обратите внимание, что декораторы могут обёртывать не только простые
+ * компоненты, но и другие декораторы.
+ */
+$decorator1 = new ConcreteDecoratorA($simple);
+$decorator2 = new ConcreteDecoratorB($decorator1);
+echo "Client: Now I've got a decorated component:\n";
+clientCode($decorator2);
